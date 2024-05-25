@@ -1,0 +1,129 @@
+syntax = "proto3";
+package go_load;
+import "api/validate.proto";
+option go_package = "grpc/go_load";
+
+// Define your service
+service GoLoadService {
+  // API to create an account
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
+
+  // API to create a session
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse) {}
+
+  // API to create a download task
+  rpc CreateDownloadTask(CreateDownloadTaskRequest) returns (CreateDownloadTaskResponse) {}
+
+  // API to update a download task
+  rpc UpdateDownloadTask(UpdateDownloadTaskRequest) returns (UpdateDownloadTaskResponse) {}
+
+  // API to retrieve a download task
+  rpc GetDownloadTask(GetDownloadTaskListRequest) returns (GetDownloadTaskListResponse) {}
+
+  // API to delete a download task
+  rpc DeleteDownloadTask(DeleteDownloadTaskRequest) returns (DeleteDownloadTaskResponse) {}
+
+  // API to get the download task file
+  rpc GetDownloadTaskFile(GetDownloadTaskFileRequest) returns (stream GetDownloadTaskFileResponse) {}
+}
+
+enum DownloadType {
+  HTTP = 0;
+  UNDEFINED = 1;
+}
+
+enum DownloadStatus {
+  unknown = 0;
+  pending = 1;
+  downloading = 2;
+  failed = 3;
+  success = 4;
+}
+
+message User {
+  uint64 id = 1;
+  string username = 2;
+}
+
+message DownloadTask {
+  uint64 id = 1;
+  User user = 2;
+  DownloadType download_type = 3;
+  string url = 4;
+  DownloadStatus status = 5;
+}
+
+message CreateAccountRequest {
+  string username = 1 [(validate.rules).string = {
+    pattern: "^[a-zA-Z0-9]{6,32}$",
+  }];
+  string password = 2 [(validate.rules).string = {
+    pattern: "^[a-zA-Z0-9]{6,32}$",
+  }];
+}
+
+message CreateAccountResponse {
+  uint64 user_id = 1;
+}
+
+message CreateSessionRequest {
+  string username = 1 [(validate.rules).string = {
+    pattern: "^[a-zA-Z0-9]{6,32}$",
+  }];
+  string password = 2 [(validate.rules).string = {
+    pattern: "^[a-zA-Z0-9]{6,32}$",
+  }];
+}
+
+message CreateSessionResponse {
+  User user = 1;
+  string token = 2;
+}
+
+message CreateDownloadTaskRequest {
+  string token = 1;
+  DownloadType download_type = 2;
+  string url = 3 [(validate.rules).string = {
+    uri: true
+  }];
+}
+
+message CreateDownloadTaskResponse {
+  // Add fields for CreateDownloadTaskResponse if needed
+}
+
+message UpdateDownloadTaskRequest {
+  string token = 1;
+  uint64 offset = 2;
+  uint64 limit = 3 [(validate.rules).uint64 = {
+    lte: 100
+  }];
+}
+
+message UpdateDownloadTaskResponse {
+  DownloadTask download_task = 1;
+}
+
+message GetDownloadTaskListRequest {
+  string token = 1;
+}
+
+message GetDownloadTaskListResponse {
+  repeated DownloadTask download_task = 1;
+  uint64 total_download_task_count = 2;
+}
+
+message DeleteDownloadTaskRequest {
+  string token = 1;
+}
+
+message DeleteDownloadTaskResponse {
+}
+
+message GetDownloadTaskFileRequest {
+  string token = 1;
+}
+
+message GetDownloadTaskFileResponse {
+  bytes data = 1;
+}
