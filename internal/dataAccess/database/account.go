@@ -3,12 +3,19 @@ package database
 import (
 	"context"
 	"github.com/doug-martin/goqu/v9"
-	"log"
+	"go.uber.org/zap"
+	"goload/internal/utils"
+)
+
+const (
+	TabNameAccounts    = "accounts"
+	ColNameAccountsID  = "id"
+	ColNameAccountName = "account_name"
 )
 
 type Account struct {
-	UserID   uint64 `sql:"user_id"`
-	Username string `sql:"username"`
+	ID       uint64 `sql:"id"`
+	Username string `sql:"account_name"`
 }
 
 type AccountDataAccessor interface {
@@ -20,39 +27,67 @@ type AccountDataAccessor interface {
 
 type accountDataAccessor struct {
 	database Database
+	logger   *zap.Logger
 }
 
 func (a accountDataAccessor) CreateAccount(ctx context.Context, account Account) (uint64, error) {
-	result, err := a.database.Insert("accounts").Rows(goqu.Record{
-		"username": account.Username,
+	logger := utils.LoggerWithContext(ctx, a.logger)
+
+	// need to get back
+	result, err := a.database.Insert(TabNameAccounts).Rows(goqu.Record{
+		ColNameAccountName: account.Username,
 	}).Executor().ExecContext(ctx)
 
 	if err != nil {
-		log.Printf("Failed to create account, err=%+v", err)
+		logger.With(zap.Error(err)).Error("Fail to create account")
 		return 0, err
 	}
 
 	lastInsertID, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("Failed to get last inserted id, error=%+v\n", err)
+		logger.With(zap.Error(err)).Error("Failed to get last inserted id")
 		return 0, err
 	}
 
 	return uint64(lastInsertID), nil
 }
 
-func NewDatabaseAccessor(database *goqu.Database) AccountDataAccessor {
-	return &accountDataAccessor{database: database}
+func NewDatabaseAccessor(database *goqu.Database, logger *zap.Logger) AccountDataAccessor {
+	return &accountDataAccessor{database: database, logger: logger}
 }
 
 func (a accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Account, error) {
-	//TODO implement me
-	panic("implement me")
+	logger := utils.LoggerWithContext(ctx, a.logger)
+	account := Account{}
+	found, err := a.database.From(TabNameAccounts).Where(goqu.Ex{ColNameAccountsID: id}).ScanStructContext(ctx, &account)
+
+	if err != nil {
+		logger.With(zap.Error(err)).Error("Failed to get account by id")
+		return Account{}, err
+	}
+
+	if !found {
+		logger.Warn("cannot find account by id")
+	}
+
+	return account, nil
 }
 
 func (a accountDataAccessor) GetAccountByUsername(ctx context.Context, username string) (Account, error) {
-	//TODO implement me
-	panic("implement me")
+	logger := utils.LoggerWithContext(ctx, a.logger)
+	account := Account{}
+	found, err := a.database.From(TabNameAccounts).Where(goqu.Ex{ColNameAccountName: username}).ScanStructContext(ctx, &account)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("Failed to get account by id")
+		return Account{}, err
+	}
+
+	if !found {
+		logger.Warn("cannot find account by id")
+		return Account{}, err
+	}
+
+	return account, nil
 }
 
 func (a accountDataAccessor) WithDatabase(database Database) AccountDataAccessor {

@@ -33,6 +33,7 @@ type account struct {
 	accountDataAccessor         database.AccountDataAccessor
 	accountPasswordDataAccessor database.AccountPasswordDataAccessor
 	hashLogic                   Hash
+	//tokenLogic Token
 }
 
 func NewAccount(
@@ -97,5 +98,20 @@ func (a account) CreateAccount(ctx context.Context, params CreateAccountParams) 
 }
 
 func (a account) CreateSession(ctx context.Context, params CreateSessionParams) (string, error) {
+	existingAccount, err := a.accountDataAccessor.GetAccountByUsername(ctx, params.Username)
+	if err != nil {
+		return "", err
+	}
+	existingAccountPassword, err := a.accountPasswordDataAccessor.GetAccountPassword(ctx, existingAccount.ID)
+	if err != nil {
+		return "", err
+	}
+	isHashEqual, err := a.hashLogic.IsHashEqual(ctx, params.Password, existingAccountPassword.Hash)
+	if err != nil {
+		return "", err
+	}
+	if isHashEqual {
+		return "", errors.New("incorrect password")
+	}
 	return "", nil
 }

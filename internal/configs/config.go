@@ -9,7 +9,8 @@ import (
 type ConfigFilePath string
 
 type Config struct {
-	Account  Account  `yaml:"account"`
+	Log      Log      `yaml:"log"`
+	Auth     Auth     `yaml:"auth"`
 	Database Database `yaml:"database"`
 }
 

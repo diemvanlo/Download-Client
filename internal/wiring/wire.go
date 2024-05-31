@@ -7,10 +7,12 @@ import (
 	"goload/internal/handler"
 	"goload/internal/handler/grpc"
 	"goload/internal/logic"
+	"goload/internal/utils"
 )
 
 var WireSet = wire.NewSet(
 	configs.WireSet,
+	utils.WireSet,
 	database.WireSet,
 	logic.WireSet,
 	handler.WireSet,

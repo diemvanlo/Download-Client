@@ -13,6 +13,7 @@ import (
 	"goload/internal/handler"
 	"goload/internal/handler/grpc"
 	"goload/internal/logic"
+	"goload/internal/utils"
 )
 
 // Injectors from wire.go:
@@ -28,18 +29,25 @@ func initializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 		return nil, nil, err
 	}
 	goquDatabase := database.InitializeGoquDB(db)
-	accountDataAccessor := database.NewDatabaseAccessor(goquDatabase)
-	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase)
-	account := config.Account
-	hash := logic.NewHash(account)
-	logicAccount := logic.NewAccount(goquDatabase, accountDataAccessor, accountPasswordDataAccessor, hash)
-	goLoadServiceServer := grpc.NewHandler(logicAccount)
+	log := config.Log
+	logger, cleanup2, err := utils.InitializeLogger(log)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	accountDataAccessor := database.NewDatabaseAccessor(goquDatabase, logger)
+	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase, logger)
+	auth := config.Auth
+	hash := logic.NewHash(auth)
+	account := logic.NewAccount(goquDatabase, accountDataAccessor, accountPasswordDataAccessor, hash)
+	goLoadServiceServer := grpc.NewHandler(account)
 	server := grpc.NewServer(goLoadServiceServer)
 	return server, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }
 
 // wire.go:
 
-var WireSet = wire.NewSet(configs.WireSet, database.WireSet, logic.WireSet, handler.WireSet)
+var WireSet = wire.NewSet(configs.WireSet, utils.WireSet, database.WireSet, logic.WireSet, handler.WireSet)

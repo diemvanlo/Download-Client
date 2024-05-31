@@ -310,6 +310,9 @@
     "go_loadCreateSessionResponse": {
       "type": "object",
       "properties": {
+        "user": {
+          "$ref": "#/definitions/go_loadUser"
+        },
         "token": {
           "type": "string"
         }
