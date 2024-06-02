@@ -6,6 +6,8 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"go.uber.org/zap"
 	"goload/internal/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -38,13 +40,13 @@ func (t tokenPublicKeyDataAccessor) CreatePublicKey(ctx context.Context, tokenPu
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("Failed to create token public key")
-		return 0, err
+		return 0, status.Errorf(codes.Internal, "failed to create token public key: %+v", err)
 	}
 
 	lastInsertedID, err := result.LastInsertId()
 	if err != nil {
 		logger.With(zap.Error(err)).Error("Failed to get last inserted id")
-		return 0, err
+		return 0, status.Errorf(codes.Internal, "failed to get last inserted id: %+v", err)
 	}
 
 	return uint64(lastInsertedID), nil
@@ -60,7 +62,7 @@ func (t tokenPublicKeyDataAccessor) GetPublicKey(ctx context.Context, id uint64)
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get public key")
-		return TokenPublicKey{}, err
+		return TokenPublicKey{}, status.Errorf(codes.Internal, "failed to get public key: %+v", err)
 	}
 
 	if !found {

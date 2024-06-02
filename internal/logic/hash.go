@@ -5,6 +5,8 @@ import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"goload/internal/configs"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Hash interface {
@@ -23,7 +25,7 @@ func NewHash(config configs.Auth) Hash {
 func (h hash) Hash(ctx context.Context, data string) (string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(data), h.accountConfig.Hash.HashCost)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to hash data: %+v", err)
 	}
 
 	return string(hashed), nil
@@ -35,7 +37,7 @@ func (h hash) IsHashEqual(ctx context.Context, data string, hashed string) (bool
 			return false, nil
 		}
 
-		return false, err
+		return false, status.Errorf(codes.Internal, "failed to if data equal hash: %+v", err)
 	}
 
 	return true, nil

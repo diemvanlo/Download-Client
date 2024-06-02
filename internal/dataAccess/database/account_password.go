@@ -6,6 +6,8 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"go.uber.org/zap"
 	"goload/internal/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -41,6 +43,7 @@ func (a accountPasswordDataAccessor) CreateUserPassword(ctx context.Context, acc
 		Executor().ExecContext(ctx)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to create account password")
+		return status.Errorf(codes.Internal, "failed to create account password: %+v", err)
 	}
 
 	return nil
@@ -53,7 +56,7 @@ func (a accountPasswordDataAccessor) GetAccountPassword(ctx context.Context, ofA
 		Where(goqu.Ex{ColNameAccountPasswordOfAccountId: ofAccountId}).ScanStructContext(ctx, &accountPassword)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("Failed to get account password by id")
-		return AccountPassword{}, err
+		return AccountPassword{}, status.Errorf(codes.Internal, "failed to get account password by id: %+v", err)
 	}
 
 	if !found {
@@ -71,7 +74,7 @@ func (a accountPasswordDataAccessor) UpdateUserPassword(ctx context.Context, acc
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("Failed to update account password")
-		return err
+		return status.Errorf(codes.Internal, "failed to update account password: %+v", err)
 	}
 
 	return nil

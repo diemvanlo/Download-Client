@@ -8,17 +8,20 @@ package wiring
 
 import (
 	"github.com/google/wire"
+	"goload/internal/app"
 	"goload/internal/configs"
+	"goload/internal/dataAccess/cache"
 	"goload/internal/dataAccess/database"
 	"goload/internal/handler"
 	"goload/internal/handler/grpc"
+	"goload/internal/handler/http"
 	"goload/internal/logic"
 	"goload/internal/utils"
 )
 
 // Injectors from wire.go:
 
-func initializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {
+func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (*app.Server, func(), error) {
 	config, err := configs.NewConfig(configFilePath)
 	if err != nil {
 		return nil, nil, err
@@ -29,20 +32,35 @@ func initializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 		return nil, nil, err
 	}
 	goquDatabase := database.InitializeGoquDB(db)
+	configsCache := config.Cache
 	log := config.Log
 	logger, cleanup2, err := utils.InitializeLogger(log)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
+	client := cache.NewClient(configsCache, logger)
+	takenAccountName := cache.NewTakenAccountName(client, logger)
 	accountDataAccessor := database.NewDatabaseAccessor(goquDatabase, logger)
 	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase, logger)
 	auth := config.Auth
 	hash := logic.NewHash(auth)
-	account := logic.NewAccount(goquDatabase, accountDataAccessor, accountPasswordDataAccessor, hash)
+	tokenPublicKey := cache.NewTokenPublicKey(client, logger)
+	tokenPublicKeyDataAccessor := database.NewTokenPublicKeyDataAccessor(goquDatabase, logger)
+	token, err := logic.NewToken(accountDataAccessor, tokenPublicKey, tokenPublicKeyDataAccessor, auth, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	account := logic.NewAccount(goquDatabase, takenAccountName, accountDataAccessor, accountPasswordDataAccessor, hash, token, logger)
 	goLoadServiceServer := grpc.NewHandler(account)
-	server := grpc.NewServer(goLoadServiceServer)
-	return server, func() {
+	configsGRPC := config.GRPC
+	server := grpc.NewServer(goLoadServiceServer, configsGRPC, logger)
+	configsHTTP := config.HTTP
+	httpServer := http.NewServer(configsGRPC, configsHTTP, logger)
+	appServer := app.NewSever(server, httpServer, logger)
+	return appServer, func() {
 		cleanup2()
 		cleanup()
 	}, nil
@@ -50,4 +68,4 @@ func initializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 
 // wire.go:
 
-var WireSet = wire.NewSet(configs.WireSet, utils.WireSet, database.WireSet, logic.WireSet, handler.WireSet)
+var WireSet = wire.NewSet(configs.WireSet, utils.WireSet, database.WireSet, cache.WireSet, logic.WireSet, handler.WireSet, app.WireSet)

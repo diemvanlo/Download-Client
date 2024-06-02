@@ -6,6 +6,7 @@ var WireSet = wire.NewSet(
 	InitializeDB,
 	InitializeGoquDB,
 	NewDatabaseAccessor,
+	NewMigrator,
 	NewAccountPasswordDataAccessor,
 	NewDownloadTaskDataAccessor,
 	NewTokenPublicKeyDataAccessor,

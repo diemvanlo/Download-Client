@@ -3,7 +3,10 @@ package grpc
 import (
 	"context"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
+	"go.uber.org/zap"
+	"goload/internal/configs"
 	"goload/internal/generated/grpc/go_load"
+	"goload/internal/utils"
 	"google.golang.org/grpc"
 	"net"
 )
@@ -13,20 +16,29 @@ type Server interface {
 }
 
 type server struct {
-	handler go_load.GoLoadServiceServer
+	handler    go_load.GoLoadServiceServer
+	grpcConfig configs.GRPC
+	logger     *zap.Logger
 }
 
 func NewServer(
 	handler go_load.GoLoadServiceServer,
+	grpcConfig configs.GRPC,
+	logger *zap.Logger,
 ) Server {
 	return &server{
-		handler: handler,
+		handler:    handler,
+		grpcConfig: grpcConfig,
+		logger:     logger,
 	}
 }
 
 func (s *server) Start(ctx context.Context) error {
-	listener, err := net.Listen("tcp", "localhost:8080")
+	logger := utils.LoggerWithContext(ctx, s.logger)
+
+	listener, err := net.Listen("tcp", s.grpcConfig.Address)
 	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to open tcp listener")
 		return err
 	}
 
