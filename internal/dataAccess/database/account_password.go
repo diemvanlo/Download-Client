@@ -10,8 +10,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var (
+	TabNameAccountPasswords = goqu.T("account_passwords")
+)
+
 const (
-	TabNameAccountPasswords           = "account_passwords"
 	ColNameAccountPasswordOfAccountId = "of_user_id"
 	ColNameAccountPasswordHash        = "hash"
 )

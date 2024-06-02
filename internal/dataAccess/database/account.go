@@ -9,8 +9,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var (
+	TabNameUsers = goqu.T("users")
+)
+
 const (
-	TabNameAccounts    = "accounts"
 	ColNameAccountsID  = "id"
 	ColNameAccountName = "account_name"
 )
@@ -36,7 +39,7 @@ func (a accountDataAccessor) CreateAccount(ctx context.Context, account Account)
 	logger := utils.LoggerWithContext(ctx, a.logger)
 
 	// need to get back
-	result, err := a.database.Insert(TabNameAccounts).Rows(goqu.Record{
+	result, err := a.database.Insert(TabNameUsers).Rows(goqu.Record{
 		ColNameAccountName: account.Username,
 	}).Executor().ExecContext(ctx)
 
@@ -61,7 +64,7 @@ func NewDatabaseAccessor(database *goqu.Database, logger *zap.Logger) AccountDat
 func (a accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Account, error) {
 	logger := utils.LoggerWithContext(ctx, a.logger)
 	account := Account{}
-	found, err := a.database.From(TabNameAccounts).Where(goqu.Ex{ColNameAccountsID: id}).ScanStructContext(ctx, &account)
+	found, err := a.database.From(TabNameUsers).Where(goqu.Ex{ColNameAccountsID: id}).ScanStructContext(ctx, &account)
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("Failed to get account by id")
@@ -78,7 +81,7 @@ func (a accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Acc
 func (a accountDataAccessor) GetAccountByUsername(ctx context.Context, username string) (Account, error) {
 	logger := utils.LoggerWithContext(ctx, a.logger)
 	account := Account{}
-	found, err := a.database.From(TabNameAccounts).Where(goqu.Ex{ColNameAccountName: username}).ScanStructContext(ctx, &account)
+	found, err := a.database.From(TabNameUsers).Where(goqu.Ex{ColNameAccountName: username}).ScanStructContext(ctx, &account)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("Failed to get account by username")
 		return Account{}, status.Errorf(codes.Internal, "failed to get account by username: %+v", err)

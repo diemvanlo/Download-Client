@@ -2,28 +2,31 @@
 
 -- +migrate StatementBegin
 CREATE TABLE IF NOT EXISTS users (
-                                     user_id BIGINT PRIMARY KEY,
-                                     username VARCHAR(100),
-    password VARCHAR(100)
+                                     user_id BIGINT UNSIGNED AUTO_INCREMENT,
+                                     username VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id)
     );
 
 CREATE TABLE IF NOT EXISTS download_task (
-                                             of_user_id BIGINT PRIMARY KEY,
+                                             of_user_id BIGINT UNSIGNED AUTO_INCREMENT,
                                              download_type SMALLINT NOT NULL,
                                              url TEXT NOT NULL,
                                              download_status SMALLINT NOT NULL,
                                              metadata TEXT NOT NULL,
+                                             PRIMARY KEY (of_user_id),
                                              FOREIGN KEY (of_user_id) REFERENCES users(user_id)
     );
 
 CREATE TABLE IF NOT EXISTS account_passwords (
-    of_account_id BIGINT UNSIGNED PRIMARY KEY,
+    of_account_id BIGINT UNSIGNED AUTO_INCREMENT,
     hash VARCHAR(128) NOT NULL,
-    FOREIGN KEY (of_account_id) REFERENCES account(id)
+    PRIMARY KEY (of_account_id),
+    FOREIGN KEY (of_account_id) REFERENCES account(user_id)
 )
 
 CREATE TABLE IF NOT EXISTS token_public_keys (
-    id BIGINT UNSIGNED PRIMARY KEY,
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    PRIMARY KEY (id),
     public_key VARBINARY(4096) NOT NULL
 )
 -- +migrate StatementEnd
