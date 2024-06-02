@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"go.uber.org/zap"
-	"goload/internal/dataAccess/database"
 	"goload/internal/handler/grpc"
 	"goload/internal/handler/http"
 	"goload/internal/utils"
@@ -11,10 +10,9 @@ import (
 )
 
 type Server struct {
-	databaseMigrator database.Migrator
-	grpcSever        grpc.Server
-	httpSever        http.Server
-	logger           *zap.Logger
+	grpcSever grpc.Server
+	httpSever http.Server
+	logger    *zap.Logger
 }
 
 func NewSever(grpcServer grpc.Server, httpServer http.Server, logger *zap.Logger) *Server {
@@ -22,10 +20,6 @@ func NewSever(grpcServer grpc.Server, httpServer http.Server, logger *zap.Logger
 }
 
 func (s Server) Start() error {
-	if err := s.databaseMigrator.Up(context.Background()); err != nil {
-		s.logger.With(zap.Error(err)).Error("failed to execute database up migration")
-	}
-
 	go func() {
 		err := s.grpcSever.Start(context.Background())
 		s.logger.With(zap.Error(err)).Info("grpc sever stopped")

@@ -27,18 +27,18 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (*app.Server, f
 		return nil, nil, err
 	}
 	configsDatabase := config.Database
-	db, cleanup, err := database.InitializeDB(configsDatabase)
+	log := config.Log
+	logger, cleanup, err := utils.InitializeLogger(log)
 	if err != nil {
 		return nil, nil, err
 	}
-	goquDatabase := database.InitializeGoquDB(db)
-	configsCache := config.Cache
-	log := config.Log
-	logger, cleanup2, err := utils.InitializeLogger(log)
+	db, cleanup2, err := database.InitializeAndMigrateUpDB(configsDatabase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
+	goquDatabase := database.InitializeGoquDB(db)
+	configsCache := config.Cache
 	client := cache.NewClient(configsCache, logger)
 	takenAccountName := cache.NewTakenAccountName(client, logger)
 	accountDataAccessor := database.NewDatabaseAccessor(goquDatabase, logger)
