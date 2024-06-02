@@ -5,7 +5,6 @@ PROJECT_NAME := goload
 all: generate build-all
 
 .PHONY: generate
-
 generate:
 	protoc -I=. \
 		--go_out=internal/generated \
@@ -74,6 +73,14 @@ build:
 .PHONY: clean
 clean:
 	rm -rf build/
+
+.PHONY: docker-compose-dev-up
+docker-compose-dev-up:
+	docker-compose -f deployments/docker-compose.dev.yml up -d
+
+.PHONY: docker-compose-dev-down
+docker-compose-dev-down:
+	docker-compose -f deployments/docker-compose.dev.yml down
 
 .PHONY: run-server
 run-server:

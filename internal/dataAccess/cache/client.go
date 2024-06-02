@@ -3,12 +3,14 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"goload/internal/configs"
 	"goload/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"sync"
 	"time"
 )
 
@@ -23,12 +25,12 @@ type Client interface {
 	IsDataSet(ctx context.Context, key string, data any) (bool, error)
 }
 
-type client struct {
+type redisClient struct {
 	redisClient *redis.Client
 	logger      *zap.Logger
 }
 
-func (c client) Set(ctx context.Context, key string, data any, ttl time.Duration) error {
+func (c redisClient) Set(ctx context.Context, key string, data any, ttl time.Duration) error {
 	logger := utils.LoggerWithContext(ctx, c.logger).
 		With(zap.String("key", key)).
 		With(zap.Any("data", data)).
@@ -42,7 +44,7 @@ func (c client) Set(ctx context.Context, key string, data any, ttl time.Duration
 	return nil
 }
 
-func (c client) Get(ctx context.Context, key string) (any, error) {
+func (c redisClient) Get(ctx context.Context, key string) (any, error) {
 	logger := utils.LoggerWithContext(ctx, c.logger).With(zap.String("key", key))
 
 	data, err := c.redisClient.Get(ctx, key).Result()
@@ -57,7 +59,7 @@ func (c client) Get(ctx context.Context, key string) (any, error) {
 	return data, nil
 }
 
-func (c client) AddToSet(ctx context.Context, key string, data ...any) error {
+func (c redisClient) AddToSet(ctx context.Context, key string, data ...any) error {
 	logger := utils.LoggerWithContext(ctx, c.logger).With(zap.String("key", key)).With(zap.Any("data", data))
 
 	if err := c.redisClient.SAdd(ctx, key, data...).Err(); err != nil {
@@ -68,7 +70,7 @@ func (c client) AddToSet(ctx context.Context, key string, data ...any) error {
 	return nil
 }
 
-func (c client) IsDataSet(ctx context.Context, key string, data any) (bool, error) {
+func (c redisClient) IsDataSet(ctx context.Context, key string, data any) (bool, error) {
 	logger := utils.LoggerWithContext(ctx, c.logger).With(zap.String("key", key)).With(zap.Any("data", data))
 
 	result, err := c.redisClient.SIsMember(ctx, key, data).Result()
@@ -80,15 +82,90 @@ func (c client) IsDataSet(ctx context.Context, key string, data any) (bool, erro
 	return result, nil
 }
 
-func NewClient(configs configs.Cache, logger *zap.Logger) Client {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     configs.Address,
-		Username: configs.Username,
-		Password: configs.Password,
-	})
+func NewRedisClient(cacheConfig configs.Cache, logger *zap.Logger) Client {
+	return &redisClient{
+		redisClient: redis.NewClient(&redis.Options{
+			Addr:     cacheConfig.Address,
+			Username: cacheConfig.Username,
+			Password: cacheConfig.Password,
+		}),
+		logger: logger,
+	}
+}
 
-	return &client{
-		redisClient: redisClient,
-		logger:      logger,
+type inMemoryClient struct {
+	cache      map[string]any
+	cacheMutex *sync.Mutex
+	logger     *zap.Logger
+}
+
+func (i inMemoryClient) Set(ctx context.Context, key string, data any, ttl time.Duration) error {
+	i.cache[key] = data
+	return nil
+}
+
+func (i inMemoryClient) Get(ctx context.Context, key string) (any, error) {
+	data, ok := i.cache[key]
+	if !ok {
+		return nil, ErrCacheMiss
+	}
+
+	return data, nil
+}
+
+func (i inMemoryClient) AddToSet(ctx context.Context, key string, data ...any) error {
+	i.cacheMutex.Lock()
+	defer i.cacheMutex.Unlock()
+	set := i.getSet(key)
+	set = append(set, data...)
+	i.cache[key] = set
+	return nil
+}
+
+func (i inMemoryClient) IsDataSet(ctx context.Context, key string, data any) (bool, error) {
+	i.cacheMutex.Lock()
+	defer i.cacheMutex.Unlock()
+
+	set := i.getSet(key)
+
+	for i := range set {
+		if set[i] == data {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (i inMemoryClient) getSet(key string) []any {
+	setValue, ok := i.cache[key]
+	if !ok {
+		return make([]any, 0)
+	}
+
+	set, ok := setValue.([]any)
+	if !ok {
+		return make([]any, 0)
+	}
+
+	return set
+}
+
+func NewInMemoryClient(logger *zap.Logger) Client {
+	return &inMemoryClient{
+		cache:      make(map[string]any),
+		cacheMutex: new(sync.Mutex),
+		logger:     logger,
+	}
+}
+
+func NewClient(cacheConfigs configs.Cache, logger *zap.Logger) (Client, error) {
+	switch cacheConfigs.Type {
+	case configs.CacheTypeInMemory:
+		return NewInMemoryClient(logger), nil
+	case configs.CacheTypeRedis:
+		return NewRedisClient(cacheConfigs, logger), nil
+	default:
+		return nil, fmt.Errorf("unsupported cache type: %s", cacheConfigs.Type)
 	}
 }
