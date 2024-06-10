@@ -10,9 +10,13 @@ import (
 	"github.com/google/wire"
 	"goload/internal/app"
 	"goload/internal/configs"
+	"goload/internal/dataAccess"
 	"goload/internal/dataAccess/cache"
 	"goload/internal/dataAccess/database"
+	"goload/internal/dataAccess/mq/consumer"
+	"goload/internal/dataAccess/mq/producer"
 	"goload/internal/handler"
+	"goload/internal/handler/consumers"
 	"goload/internal/handler/grpc"
 	"goload/internal/handler/http"
 	"goload/internal/logic"
@@ -41,7 +45,7 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (*app.Server, f
 	configsCache := config.Cache
 	client := cache.NewRedisClient(configsCache, logger)
 	takenAccountName := cache.NewTakenAccountName(client, logger)
-	accountDataAccessor := database.NewDatabaseAccessor(goquDatabase, logger)
+	accountDataAccessor := database.NewAccountDataAccessor(goquDatabase, logger)
 	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase, logger)
 	auth := config.Auth
 	hash := logic.NewHash(auth)
@@ -54,12 +58,30 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (*app.Server, f
 		return nil, nil, err
 	}
 	account := logic.NewAccount(goquDatabase, takenAccountName, accountDataAccessor, accountPasswordDataAccessor, hash, token, logger)
-	goLoadServiceServer := grpc.NewHandler(account)
+	downloadTaskDataAccessor := database.NewDownloadTaskDataAccessor(goquDatabase, logger)
+	mq := config.MQ
+	producerClient, err := producer.NewClient(mq, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	downloadTaskCreatedProducer := producer.NewDownloadTaskCreatedProducer(producerClient, logger)
+	downloadTask := logic.NewDownloadTask(token, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, logger)
+	goLoadServiceServer := grpc.NewHandler(account, downloadTask)
 	configsGRPC := config.GRPC
 	server := grpc.NewServer(goLoadServiceServer, configsGRPC, logger)
 	configsHTTP := config.HTTP
 	httpServer := http.NewServer(configsGRPC, configsHTTP, logger)
-	appServer := app.NewSever(server, httpServer, logger)
+	downloadTaskCreated := consumers.NewDownloadTaskCreated(logger)
+	consumerConsumer, err := consumer.NewConsumer(mq, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	root := consumers.NewRoot(downloadTaskCreated, consumerConsumer, logger)
+	appServer := app.NewServer(server, httpServer, root, logger)
 	return appServer, func() {
 		cleanup2()
 		cleanup()
@@ -68,4 +90,4 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (*app.Server, f
 
 // wire.go:
 
-var WireSet = wire.NewSet(configs.WireSet, utils.WireSet, database.WireSet, cache.WireSet, logic.WireSet, handler.WireSet, app.WireSet)
+var WireSet = wire.NewSet(configs.WireSet, utils.WireSet, dataaccess.WireSet, logic.WireSet, handler.WireSet, app.WireSet)

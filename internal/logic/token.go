@@ -81,7 +81,7 @@ func NewToken(accountDataAccessor database.AccountDataAccessor,
 	logger *zap.Logger) (Token, error) {
 	expiresIn, err := auth.Token.GetExpiresInDuration()
 	if err != nil {
-		logger.With(zap.Error(err)).Error("Failed to parse expire_in")
+		logger.With(zap.Error(err)).Error("Failed to parse expire_in: " + auth.Token.ExpiresIn)
 		return nil, err
 	}
 

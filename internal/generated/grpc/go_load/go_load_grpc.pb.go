@@ -22,8 +22,8 @@ const (
 	GoLoadService_CreateAccount_FullMethodName       = "/go_load.GoLoadService/CreateAccount"
 	GoLoadService_CreateSession_FullMethodName       = "/go_load.GoLoadService/CreateSession"
 	GoLoadService_CreateDownloadTask_FullMethodName  = "/go_load.GoLoadService/CreateDownloadTask"
+	GoLoadService_GetDownloadTaskList_FullMethodName = "/go_load.GoLoadService/GetDownloadTaskList"
 	GoLoadService_UpdateDownloadTask_FullMethodName  = "/go_load.GoLoadService/UpdateDownloadTask"
-	GoLoadService_GetDownloadTask_FullMethodName     = "/go_load.GoLoadService/GetDownloadTask"
 	GoLoadService_DeleteDownloadTask_FullMethodName  = "/go_load.GoLoadService/DeleteDownloadTask"
 	GoLoadService_GetDownloadTaskFile_FullMethodName = "/go_load.GoLoadService/GetDownloadTaskFile"
 )
@@ -32,19 +32,12 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GoLoadServiceClient interface {
-	// API to create an account
 	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error)
-	// API to create a session
 	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error)
-	// API to create a download task
 	CreateDownloadTask(ctx context.Context, in *CreateDownloadTaskRequest, opts ...grpc.CallOption) (*CreateDownloadTaskResponse, error)
-	// API to update a download task
+	GetDownloadTaskList(ctx context.Context, in *GetDownloadTaskListRequest, opts ...grpc.CallOption) (*GetDownloadTaskListResponse, error)
 	UpdateDownloadTask(ctx context.Context, in *UpdateDownloadTaskRequest, opts ...grpc.CallOption) (*UpdateDownloadTaskResponse, error)
-	// API to retrieve a download task
-	GetDownloadTask(ctx context.Context, in *GetDownloadTaskListRequest, opts ...grpc.CallOption) (*GetDownloadTaskListResponse, error)
-	// API to delete a download task
 	DeleteDownloadTask(ctx context.Context, in *DeleteDownloadTaskRequest, opts ...grpc.CallOption) (*DeleteDownloadTaskResponse, error)
-	// API to get the download task file
 	GetDownloadTaskFile(ctx context.Context, in *GetDownloadTaskFileRequest, opts ...grpc.CallOption) (GoLoadService_GetDownloadTaskFileClient, error)
 }
 
@@ -83,18 +76,18 @@ func (c *goLoadServiceClient) CreateDownloadTask(ctx context.Context, in *Create
 	return out, nil
 }
 
-func (c *goLoadServiceClient) UpdateDownloadTask(ctx context.Context, in *UpdateDownloadTaskRequest, opts ...grpc.CallOption) (*UpdateDownloadTaskResponse, error) {
-	out := new(UpdateDownloadTaskResponse)
-	err := c.cc.Invoke(ctx, GoLoadService_UpdateDownloadTask_FullMethodName, in, out, opts...)
+func (c *goLoadServiceClient) GetDownloadTaskList(ctx context.Context, in *GetDownloadTaskListRequest, opts ...grpc.CallOption) (*GetDownloadTaskListResponse, error) {
+	out := new(GetDownloadTaskListResponse)
+	err := c.cc.Invoke(ctx, GoLoadService_GetDownloadTaskList_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *goLoadServiceClient) GetDownloadTask(ctx context.Context, in *GetDownloadTaskListRequest, opts ...grpc.CallOption) (*GetDownloadTaskListResponse, error) {
-	out := new(GetDownloadTaskListResponse)
-	err := c.cc.Invoke(ctx, GoLoadService_GetDownloadTask_FullMethodName, in, out, opts...)
+func (c *goLoadServiceClient) UpdateDownloadTask(ctx context.Context, in *UpdateDownloadTaskRequest, opts ...grpc.CallOption) (*UpdateDownloadTaskResponse, error) {
+	out := new(UpdateDownloadTaskResponse)
+	err := c.cc.Invoke(ctx, GoLoadService_UpdateDownloadTask_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -146,19 +139,12 @@ func (x *goLoadServiceGetDownloadTaskFileClient) Recv() (*GetDownloadTaskFileRes
 // All implementations must embed UnimplementedGoLoadServiceServer
 // for forward compatibility
 type GoLoadServiceServer interface {
-	// API to create an account
 	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
-	// API to create a session
 	CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error)
-	// API to create a download task
 	CreateDownloadTask(context.Context, *CreateDownloadTaskRequest) (*CreateDownloadTaskResponse, error)
-	// API to update a download task
+	GetDownloadTaskList(context.Context, *GetDownloadTaskListRequest) (*GetDownloadTaskListResponse, error)
 	UpdateDownloadTask(context.Context, *UpdateDownloadTaskRequest) (*UpdateDownloadTaskResponse, error)
-	// API to retrieve a download task
-	GetDownloadTask(context.Context, *GetDownloadTaskListRequest) (*GetDownloadTaskListResponse, error)
-	// API to delete a download task
 	DeleteDownloadTask(context.Context, *DeleteDownloadTaskRequest) (*DeleteDownloadTaskResponse, error)
-	// API to get the download task file
 	GetDownloadTaskFile(*GetDownloadTaskFileRequest, GoLoadService_GetDownloadTaskFileServer) error
 	mustEmbedUnimplementedGoLoadServiceServer()
 }
@@ -176,11 +162,11 @@ func (UnimplementedGoLoadServiceServer) CreateSession(context.Context, *CreateSe
 func (UnimplementedGoLoadServiceServer) CreateDownloadTask(context.Context, *CreateDownloadTaskRequest) (*CreateDownloadTaskResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDownloadTask not implemented")
 }
+func (UnimplementedGoLoadServiceServer) GetDownloadTaskList(context.Context, *GetDownloadTaskListRequest) (*GetDownloadTaskListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDownloadTaskList not implemented")
+}
 func (UnimplementedGoLoadServiceServer) UpdateDownloadTask(context.Context, *UpdateDownloadTaskRequest) (*UpdateDownloadTaskResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDownloadTask not implemented")
-}
-func (UnimplementedGoLoadServiceServer) GetDownloadTask(context.Context, *GetDownloadTaskListRequest) (*GetDownloadTaskListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDownloadTask not implemented")
 }
 func (UnimplementedGoLoadServiceServer) DeleteDownloadTask(context.Context, *DeleteDownloadTaskRequest) (*DeleteDownloadTaskResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteDownloadTask not implemented")
@@ -255,6 +241,24 @@ func _GoLoadService_CreateDownloadTask_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GoLoadService_GetDownloadTaskList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDownloadTaskListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoLoadServiceServer).GetDownloadTaskList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GoLoadService_GetDownloadTaskList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoLoadServiceServer).GetDownloadTaskList(ctx, req.(*GetDownloadTaskListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GoLoadService_UpdateDownloadTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateDownloadTaskRequest)
 	if err := dec(in); err != nil {
@@ -269,24 +273,6 @@ func _GoLoadService_UpdateDownloadTask_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GoLoadServiceServer).UpdateDownloadTask(ctx, req.(*UpdateDownloadTaskRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GoLoadService_GetDownloadTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDownloadTaskListRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GoLoadServiceServer).GetDownloadTask(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: GoLoadService_GetDownloadTask_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GoLoadServiceServer).GetDownloadTask(ctx, req.(*GetDownloadTaskListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -350,12 +336,12 @@ var GoLoadService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GoLoadService_CreateDownloadTask_Handler,
 		},
 		{
-			MethodName: "UpdateDownloadTask",
-			Handler:    _GoLoadService_UpdateDownloadTask_Handler,
+			MethodName: "GetDownloadTaskList",
+			Handler:    _GoLoadService_GetDownloadTaskList_Handler,
 		},
 		{
-			MethodName: "GetDownloadTask",
-			Handler:    _GoLoadService_GetDownloadTask_Handler,
+			MethodName: "UpdateDownloadTask",
+			Handler:    _GoLoadService_UpdateDownloadTask_Handler,
 		},
 		{
 			MethodName: "DeleteDownloadTask",

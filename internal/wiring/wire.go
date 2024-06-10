@@ -1,11 +1,15 @@
+//go:build wireinject
+// +build wireinject
+
+//
+//go:generate go run github.com/google/wire/cmd/wire
 package wiring
 
 import (
 	"github.com/google/wire"
 	"goload/internal/app"
 	"goload/internal/configs"
-	"goload/internal/dataAccess/cache"
-	"goload/internal/dataAccess/database"
+	dataaccess "goload/internal/dataAccess"
 	"goload/internal/handler"
 	"goload/internal/logic"
 	"goload/internal/utils"
@@ -14,8 +18,7 @@ import (
 var WireSet = wire.NewSet(
 	configs.WireSet,
 	utils.WireSet,
-	database.WireSet,
-	cache.WireSet,
+	dataaccess.WireSet,
 	logic.WireSet,
 	handler.WireSet,
 	app.WireSet,

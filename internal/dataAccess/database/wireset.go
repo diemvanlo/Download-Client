@@ -5,7 +5,7 @@ import "github.com/google/wire"
 var WireSet = wire.NewSet(
 	InitializeAndMigrateUpDB,
 	InitializeGoquDB,
-	NewDatabaseAccessor,
+	NewAccountDataAccessor,
 	NewMigrator,
 	NewAccountPasswordDataAccessor,
 	NewDownloadTaskDataAccessor,

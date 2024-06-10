@@ -14,23 +14,23 @@ import (
 )
 
 type CreateAccountParams struct {
-	Username string
-	Password string
+	AccountName string
+	Password    string
 }
 
 type CreateAccountOutput struct {
-	ID       uint64
-	UserName string
+	ID          uint64
+	AccountName string
 }
 
 type CreateSessionParams struct {
-	Username string
-	Password string
+	AccountName string
+	Password    string
 }
 
 type Account interface {
 	CreateAccount(ctx context.Context, params CreateAccountParams) (CreateAccountOutput, error)
-	CreateSession(ctx context.Context, params CreateSessionParams) (string, error)
+	CreateSession(ctx context.Context, params CreateSessionParams) (token string, err error)
 }
 
 type account struct {
@@ -45,7 +45,7 @@ type account struct {
 
 func NewAccount(
 	goquDatabase *goqu.Database,
-	takenAccountName cache.TakenAccountName,
+	takenAccountNameCache cache.TakenAccountName,
 	accountDataAccessor database.AccountDataAccessor,
 	accountPasswordDataAccessor database.AccountPasswordDataAccessor,
 	hashLogic Hash,
@@ -54,7 +54,7 @@ func NewAccount(
 ) Account {
 	return &account{
 		goquDatabase:                goquDatabase,
-		takenAccountNameCache:       takenAccountName,
+		takenAccountNameCache:       takenAccountNameCache,
 		accountDataAccessor:         accountDataAccessor,
 		accountPasswordDataAccessor: accountPasswordDataAccessor,
 		hashLogic:                   hashLogic,
@@ -63,51 +63,48 @@ func NewAccount(
 	}
 }
 
-func (a account) isAccontUsernameTaken(ctx context.Context, username string) (bool, error) {
-	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.String("username", username))
+func (a account) isAccountAccountNameTaken(ctx context.Context, accountName string) (bool, error) {
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.String("account_name", accountName))
 
-	accountNameTaken, err := a.takenAccountNameCache.Has(ctx, username)
+	accountNameTaken, err := a.takenAccountNameCache.Has(ctx, accountName)
 	if err != nil {
-		logger.With(zap.Error(err)).Warn("Failed to get username in cache, will fall back to database")
+		logger.With(zap.Error(err)).Warn("failed to get account name from taken set in cache, will fall back to database")
 	} else {
 		return accountNameTaken, nil
 	}
 
-	_, err = a.accountDataAccessor.GetAccountByUsername(ctx, username)
+	_, err = a.accountDataAccessor.GetAccountByAccountName(ctx, accountName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
 		}
+
 		return false, err
 	}
 
-	if err := a.takenAccountNameCache.Add(ctx, username); err != nil {
-		logger.With(zap.Error(err)).Warn("failed to set username into taken set in cache")
+	err = a.takenAccountNameCache.Add(ctx, accountName)
+	if err != nil {
+		logger.With(zap.Error(err)).Warn("failed to set account name into taken set in cache")
 	}
+
 	return true, nil
 }
 
 func (a account) CreateAccount(ctx context.Context, params CreateAccountParams) (CreateAccountOutput, error) {
-	accountNameTaken, err := a.isAccontUsernameTaken(ctx, params.Username)
+	accountNameTaken, err := a.isAccountAccountNameTaken(ctx, params.AccountName)
 	if err != nil {
-		return CreateAccountOutput{}, status.Errorf(codes.Internal, "failed to check if username is taken")
+		return CreateAccountOutput{}, status.Errorf(codes.Internal, "failed to check if account name is taken")
 	}
 
 	if accountNameTaken {
-		return CreateAccountOutput{}, status.Errorf(codes.AlreadyExists, "account name is already taken")
+		return CreateAccountOutput{}, status.Error(codes.AlreadyExists, "account name is already taken")
 	}
 
-	var accountId uint64
+	var accountID uint64
 	txErr := a.goquDatabase.WithTx(func(td *goqu.TxDatabase) error {
-		usernameTaken, err := a.isAccontUsernameTaken(ctx, params.Username)
-		if err != nil {
-			return err
-		}
-
-		if usernameTaken {
-			return errors.New("Username is already taken")
-		}
-		accountId, err = a.accountDataAccessor.WithDatabase(td).CreateAccount(ctx, database.Account{Username: params.Username})
+		accountID, err = a.accountDataAccessor.WithDatabase(td).CreateAccount(ctx, database.Account{
+			AccountName: params.AccountName,
+		})
 		if err != nil {
 			return err
 		}
@@ -117,40 +114,50 @@ func (a account) CreateAccount(ctx context.Context, params CreateAccountParams) 
 			return hashErr
 		}
 
-		if err := a.accountPasswordDataAccessor.WithDatabase(td).CreateUserPassword(ctx, database.AccountPassword{
-			OfUserID: accountId,
-			Hash:     hashedPassword,
-		}); err != nil {
+		err = a.accountPasswordDataAccessor.WithDatabase(td).CreateAccountPassword(ctx, database.AccountPassword{
+			OfAccountID: accountID,
+			Hash:        hashedPassword,
+		})
+		if err != nil {
 			return err
 		}
+
 		return nil
 	})
 	if txErr != nil {
 		return CreateAccountOutput{}, txErr
 	}
-	return CreateAccountOutput{ID: accountId, UserName: params.Username}, nil
+
+	return CreateAccountOutput{
+		ID:          accountID,
+		AccountName: params.AccountName,
+	}, nil
 }
 
 func (a account) CreateSession(ctx context.Context, params CreateSessionParams) (string, error) {
-	existingAccount, err := a.accountDataAccessor.GetAccountByUsername(ctx, params.Username)
+	existingAccount, err := a.accountDataAccessor.GetAccountByAccountName(ctx, params.AccountName)
 	if err != nil {
 		return "", err
 	}
+
 	existingAccountPassword, err := a.accountPasswordDataAccessor.GetAccountPassword(ctx, existingAccount.ID)
 	if err != nil {
 		return "", err
 	}
+
 	isHashEqual, err := a.hashLogic.IsHashEqual(ctx, params.Password, existingAccountPassword.Hash)
 	if err != nil {
 		return "", err
 	}
-	if isHashEqual {
-		return "", status.Errorf(codes.Unauthenticated, "incorrect password")
+
+	if !isHashEqual {
+		return "", status.Error(codes.Unauthenticated, "incorrect password")
 	}
 
 	token, _, err := a.tokenLogic.GetToken(ctx, existingAccount.ID)
 	if err != nil {
 		return "", err
 	}
+
 	return token, nil
 }

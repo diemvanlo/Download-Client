@@ -4,4 +4,9 @@ import (
 	"github.com/google/wire"
 )
 
-var WireSet = wire.NewSet(NewAccount, NewHash, NewToken)
+var WireSet = wire.NewSet(
+	NewAccount,
+	NewHash,
+	NewToken,
+	NewDownloadTask,
+)

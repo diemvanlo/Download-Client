@@ -1,4 +1,8 @@
 package configs
 
-// go: embed local.yaml
+import (
+	_ "embed"
+)
+
+//go:embed local.yaml
 var DefaultConfigBytes []byte

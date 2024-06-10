@@ -3,7 +3,7 @@ package configs
 import "time"
 
 type Hash struct {
-	HashCost int `yaml:"hash_cost"`
+	HashCost int `yaml:"cost"`
 }
 
 type Token struct {
@@ -20,6 +20,6 @@ func (t Token) GetGenerateTokenBeforeExpiryDuration() (time.Duration, error) {
 }
 
 type Auth struct {
-	Hash  Hash
-	Token Token
+	Hash  Hash  `yaml:"hash"`
+	Token Token `yaml:"token"`
 }

@@ -15,13 +15,13 @@ var (
 )
 
 const (
-	ColNameTokenPublicKeyID        = "id"
-	ColNameTokenPublicKeyPublicKey = "public_key"
+	ColNameTokenPublicKeysID        = "id"
+	ColNameTokenPublicKeysPublicKey = "public_key"
 )
 
 type TokenPublicKey struct {
-	ID        uint64 `sql:"id"`
-	PublicKey string `sql:"public_key"`
+	ID        uint64 `db:"id"`
+	PublicKey string `db:"public_key"`
 }
 
 type TokenPublicKeyDataAccessor interface {
@@ -35,34 +35,54 @@ type tokenPublicKeyDataAccessor struct {
 	logger   *zap.Logger
 }
 
-func (t tokenPublicKeyDataAccessor) CreatePublicKey(ctx context.Context, tokenPublicKey TokenPublicKey) (uint64, error) {
-	logger := utils.LoggerWithContext(ctx, t.logger)
-	result, err := t.database.Insert(TabNameTokenPublicKeys).Rows(goqu.Record{
-		ColNameTokenPublicKeyPublicKey: tokenPublicKey.PublicKey,
-	}).Executor().ExecContext(ctx)
+func NewTokenPublicKeyDataAccessor(
+	database *goqu.Database,
+	logger *zap.Logger,
+) TokenPublicKeyDataAccessor {
+	return &tokenPublicKeyDataAccessor{
+		database: database,
+		logger:   logger,
+	}
+}
 
+func (a tokenPublicKeyDataAccessor) CreatePublicKey(
+	ctx context.Context,
+	tokenPublicKey TokenPublicKey,
+) (uint64, error) {
+	logger := utils.LoggerWithContext(ctx, a.logger)
+	result, err := a.database.
+		Insert(TabNameTokenPublicKeys).
+		Rows(goqu.Record{
+			ColNameTokenPublicKeysPublicKey: tokenPublicKey.PublicKey,
+		}).
+		Executor().
+		ExecContext(ctx)
 	if err != nil {
-		logger.With(zap.Error(err)).Error("Failed to create token public key")
+		logger.With(zap.Error(err)).Error("failed to create token public key")
 		return 0, status.Errorf(codes.Internal, "failed to create token public key: %+v", err)
 	}
 
 	lastInsertedID, err := result.LastInsertId()
 	if err != nil {
-		logger.With(zap.Error(err)).Error("Failed to get last inserted id")
+		logger.With(zap.Error(err)).Error("failed to get last inserted id")
 		return 0, status.Errorf(codes.Internal, "failed to get last inserted id: %+v", err)
 	}
 
 	return uint64(lastInsertedID), nil
 }
 
-func (t tokenPublicKeyDataAccessor) GetPublicKey(ctx context.Context, id uint64) (TokenPublicKey, error) {
-	logger := utils.LoggerWithContext(ctx, t.logger).With(zap.Uint64(ColNameTokenPublicKeyID, id))
+func (a tokenPublicKeyDataAccessor) GetPublicKey(ctx context.Context, id uint64) (TokenPublicKey, error) {
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.Uint64("id", id))
 
 	tokenPublicKey := TokenPublicKey{}
-	found, err := t.database.Select().From(TabNameTokenPublicKeys).Where(goqu.Ex{
-		ColNameTokenPublicKeyID: id,
-	}).Executor().ScanStructContext(ctx, &tokenPublicKey)
-
+	found, err := a.database.
+		Select().
+		From(TabNameTokenPublicKeys).
+		Where(goqu.Ex{
+			ColNameTokenPublicKeysID: id,
+		}).
+		Executor().
+		ScanStructContext(ctx, &tokenPublicKey)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get public key")
 		return TokenPublicKey{}, status.Errorf(codes.Internal, "failed to get public key: %+v", err)
@@ -76,14 +96,7 @@ func (t tokenPublicKeyDataAccessor) GetPublicKey(ctx context.Context, id uint64)
 	return tokenPublicKey, nil
 }
 
-func (t tokenPublicKeyDataAccessor) WithDatabase(database Database) TokenPublicKeyDataAccessor {
-	t.database = database
-	return t
-}
-
-func NewTokenPublicKeyDataAccessor(database *goqu.Database, logger *zap.Logger) TokenPublicKeyDataAccessor {
-	return &tokenPublicKeyDataAccessor{
-		database: database,
-		logger:   logger,
-	}
+func (a tokenPublicKeyDataAccessor) WithDatabase(database Database) TokenPublicKeyDataAccessor {
+	a.database = database
+	return a
 }

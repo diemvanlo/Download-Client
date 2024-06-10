@@ -1,4 +1,4 @@
-package goload
+package main
 
 import (
 	"fmt"

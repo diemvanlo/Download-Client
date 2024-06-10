@@ -18,7 +18,6 @@
   "paths": {
     "/go_load.GoLoadService/CreateAccount": {
       "post": {
-        "summary": "API to create an account",
         "operationId": "GoLoadService_CreateAccount",
         "responses": {
           "200": {
@@ -51,7 +50,6 @@
     },
     "/go_load.GoLoadService/CreateDownloadTask": {
       "post": {
-        "summary": "API to create a download task",
         "operationId": "GoLoadService_CreateDownloadTask",
         "responses": {
           "200": {
@@ -84,7 +82,6 @@
     },
     "/go_load.GoLoadService/CreateSession": {
       "post": {
-        "summary": "API to create a session",
         "operationId": "GoLoadService_CreateSession",
         "responses": {
           "200": {
@@ -117,7 +114,6 @@
     },
     "/go_load.GoLoadService/DeleteDownloadTask": {
       "post": {
-        "summary": "API to delete a download task",
         "operationId": "GoLoadService_DeleteDownloadTask",
         "responses": {
           "200": {
@@ -148,42 +144,8 @@
         ]
       }
     },
-    "/go_load.GoLoadService/GetDownloadTask": {
-      "post": {
-        "summary": "API to retrieve a download task",
-        "operationId": "GoLoadService_GetDownloadTask",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/go_loadGetDownloadTaskListResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/go_loadGetDownloadTaskListRequest"
-            }
-          }
-        ],
-        "tags": [
-          "GoLoadService"
-        ]
-      }
-    },
     "/go_load.GoLoadService/GetDownloadTaskFile": {
       "post": {
-        "summary": "API to get the download task file",
         "operationId": "GoLoadService_GetDownloadTaskFile",
         "responses": {
           "200": {
@@ -223,9 +185,40 @@
         ]
       }
     },
+    "/go_load.GoLoadService/GetDownloadTaskList": {
+      "post": {
+        "operationId": "GoLoadService_GetDownloadTaskList",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/go_loadGetDownloadTaskListResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/go_loadGetDownloadTaskListRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GoLoadService"
+        ]
+      }
+    },
     "/go_load.GoLoadService/UpdateDownloadTask": {
       "post": {
-        "summary": "API to update a download task",
         "operationId": "GoLoadService_UpdateDownloadTask",
         "responses": {
           "200": {
@@ -258,10 +251,22 @@
     }
   },
   "definitions": {
+    "go_loadAccount": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "accountName": {
+          "type": "string"
+        }
+      }
+    },
     "go_loadCreateAccountRequest": {
       "type": "object",
       "properties": {
-        "username": {
+        "accountName": {
           "type": "string"
         },
         "password": {
@@ -272,7 +277,7 @@
     "go_loadCreateAccountResponse": {
       "type": "object",
       "properties": {
-        "userId": {
+        "accountId": {
           "type": "string",
           "format": "uint64"
         }
@@ -294,12 +299,16 @@
     },
     "go_loadCreateDownloadTaskResponse": {
       "type": "object",
-      "title": "Add fields for CreateDownloadTaskResponse if needed"
+      "properties": {
+        "downloadTask": {
+          "$ref": "#/definitions/go_loadDownloadTask"
+        }
+      }
     },
     "go_loadCreateSessionRequest": {
       "type": "object",
       "properties": {
-        "username": {
+        "accountName": {
           "type": "string"
         },
         "password": {
@@ -310,8 +319,8 @@
     "go_loadCreateSessionResponse": {
       "type": "object",
       "properties": {
-        "user": {
-          "$ref": "#/definitions/go_loadUser"
+        "account": {
+          "$ref": "#/definitions/go_loadAccount"
         },
         "token": {
           "type": "string"
@@ -323,6 +332,9 @@
       "properties": {
         "token": {
           "type": "string"
+        },
+        "downloadTask": {
+          "$ref": "#/definitions/go_loadDownloadTask"
         }
       }
     },
@@ -332,13 +344,13 @@
     "go_loadDownloadStatus": {
       "type": "string",
       "enum": [
-        "unknown",
-        "pending",
-        "downloading",
-        "failed",
-        "success"
+        "UndefinedStatus",
+        "Pending",
+        "Downloading",
+        "Failed",
+        "Success"
       ],
-      "default": "unknown"
+      "default": "UndefinedStatus"
     },
     "go_loadDownloadTask": {
       "type": "object",
@@ -347,8 +359,8 @@
           "type": "string",
           "format": "uint64"
         },
-        "user": {
-          "$ref": "#/definitions/go_loadUser"
+        "ofAccount": {
+          "$ref": "#/definitions/go_loadAccount"
         },
         "downloadType": {
           "$ref": "#/definitions/go_loadDownloadType"
@@ -356,7 +368,7 @@
         "url": {
           "type": "string"
         },
-        "status": {
+        "downloadStatus": {
           "$ref": "#/definitions/go_loadDownloadStatus"
         }
       }
@@ -364,16 +376,20 @@
     "go_loadDownloadType": {
       "type": "string",
       "enum": [
-        "HTTP",
-        "UNDEFINED"
+        "UndefinedType",
+        "HTTP"
       ],
-      "default": "HTTP"
+      "default": "UndefinedType"
     },
     "go_loadGetDownloadTaskFileRequest": {
       "type": "object",
       "properties": {
         "token": {
           "type": "string"
+        },
+        "downloadTaskId": {
+          "type": "string",
+          "format": "uint64"
         }
       }
     },
@@ -391,13 +407,21 @@
       "properties": {
         "token": {
           "type": "string"
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64"
         }
       }
     },
     "go_loadGetDownloadTaskListResponse": {
       "type": "object",
       "properties": {
-        "downloadTask": {
+        "downloadTaskList": {
           "type": "array",
           "items": {
             "type": "object",
@@ -416,13 +440,12 @@
         "token": {
           "type": "string"
         },
-        "offset": {
+        "downloadTaskId": {
           "type": "string",
           "format": "uint64"
         },
-        "limit": {
-          "type": "string",
-          "format": "uint64"
+        "url": {
+          "type": "string"
         }
       }
     },
@@ -431,18 +454,6 @@
       "properties": {
         "downloadTask": {
           "$ref": "#/definitions/go_loadDownloadTask"
-        }
-      }
-    },
-    "go_loadUser": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "username": {
-          "type": "string"
         }
       }
     },

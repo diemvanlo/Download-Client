@@ -10,12 +10,13 @@ import (
 type ConfigFilePath string
 
 type Config struct {
-	GRPC     GRPC     `yaml:"GRPC"`
-	HTTP     HTTP     `yaml:"HTTP"`
+	GRPC     GRPC     `yaml:"grpc"`
+	HTTP     HTTP     `yaml:"http"`
 	Log      Log      `yaml:"log"`
 	Auth     Auth     `yaml:"auth"`
 	Database Database `yaml:"database"`
 	Cache    Cache    `yaml:"cache"`
+	MQ       MQ       `yaml:"mq"`
 }
 
 func NewConfig(filePath ConfigFilePath) (Config, error) {
@@ -28,14 +29,13 @@ func NewConfig(filePath ConfigFilePath) (Config, error) {
 	if filePath != "" {
 		configBytes, err = os.ReadFile(string(filePath))
 		if err != nil {
-			return Config{}, fmt.Errorf("Failed to read YAML file: %w", err)
+			return Config{}, fmt.Errorf("failed to read YAML file: %w", err)
 		}
 	}
 
 	err = yaml.Unmarshal(configBytes, &config)
 	if err != nil {
-		return Config{}, fmt.Errorf("Failed to read YAML file: %w", err)
+		return Config{}, fmt.Errorf("failed to unmarshal YAML: %w", err)
 	}
-
 	return config, nil
 }

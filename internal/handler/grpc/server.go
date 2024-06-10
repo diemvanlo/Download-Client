@@ -53,5 +53,7 @@ func (s *server) Start(ctx context.Context) error {
 		),
 	)
 	go_load.RegisterGoLoadServiceServer(server, s.handler)
+
+	logger.With(zap.String("address", s.grpcConfig.Address)).Info("starting grpc server")
 	return server.Serve(listener)
 }
