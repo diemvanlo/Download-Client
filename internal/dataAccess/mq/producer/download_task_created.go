@@ -3,7 +3,6 @@ package producer
 import (
 	"context"
 	"encoding/json"
-	"goload/internal/dataAccess/database"
 	"goload/internal/utils"
 
 	"go.uber.org/zap"
@@ -16,7 +15,7 @@ const (
 )
 
 type DownloadTaskCreated struct {
-	DownloadTask database.DownloadTask
+	ID uint64 `json:"id"`
 }
 
 type DownloadTaskCreatedProducer interface {

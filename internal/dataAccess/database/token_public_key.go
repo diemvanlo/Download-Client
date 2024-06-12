@@ -20,7 +20,7 @@ const (
 )
 
 type TokenPublicKey struct {
-	ID        uint64 `db:"id"`
+	ID        uint64 `db:"id" goqu:"skipinsert,skipupdate"`
 	PublicKey string `db:"public_key"`
 }
 

@@ -53,7 +53,7 @@ func (a Handler) CreateDownloadTask(
 	}
 
 	return &go_load.CreateDownloadTaskResponse{
-		DownloadTask: &output.DownloadTask,
+		DownloadTask: output.DownloadTask,
 	}, nil
 }
 
@@ -61,7 +61,7 @@ func (a Handler) CreateSession(
 	ctx context.Context,
 	request *go_load.CreateSessionRequest,
 ) (*go_load.CreateSessionResponse, error) {
-	token, err := a.accountLogic.CreateSession(ctx, logic.CreateSessionParams{
+	output, err := a.accountLogic.CreateSession(ctx, logic.CreateSessionParams{
 		AccountName: request.GetAccountName(),
 		Password:    request.GetPassword(),
 	})
@@ -70,15 +70,23 @@ func (a Handler) CreateSession(
 	}
 
 	return &go_load.CreateSessionResponse{
-		Token: token,
+		Account: output.Account,
+		Token:   output.Token,
 	}, nil
 }
 
 func (a Handler) DeleteDownloadTask(
-	context.Context,
-	*go_load.DeleteDownloadTaskRequest,
+	ctx context.Context,
+	request *go_load.DeleteDownloadTaskRequest,
 ) (*go_load.DeleteDownloadTaskResponse, error) {
-	panic("unimplemented")
+	if err := a.downloadTaskLogic.DeleteDownloadTask(ctx, logic.DeleteDownloadTaskParams{
+		Token:          request.GetToken(),
+		DownloadTaskID: request.GetDownloadTaskId(),
+	}); err != nil {
+		return nil, err
+	}
+
+	return &go_load.DeleteDownloadTaskResponse{}, nil
 }
 
 func (a Handler) GetDownloadTaskFile(
@@ -89,15 +97,40 @@ func (a Handler) GetDownloadTaskFile(
 }
 
 func (a Handler) GetDownloadTaskList(
-	context.Context,
-	*go_load.GetDownloadTaskListRequest,
+	ctx context.Context,
+	request *go_load.GetDownloadTaskListRequest,
 ) (*go_load.GetDownloadTaskListResponse, error) {
-	panic("unimplemented")
+	output, err := a.downloadTaskLogic.GetDownloadTaskList(ctx, logic.GetDownloadTaskListParams{
+		Token:  request.GetToken(),
+		Offset: request.GetOffset(),
+		Limit:  request.GetLimit(),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &go_load.GetDownloadTaskListResponse{
+		TotalDownloadTaskCount: output.TotalDownloadTaskCount,
+		DownloadTaskList:       output.DownloadTaskList,
+	}, nil
 }
 
 func (a Handler) UpdateDownloadTask(
-	context.Context,
-	*go_load.UpdateDownloadTaskRequest,
+	ctx context.Context,
+	request *go_load.UpdateDownloadTaskRequest,
 ) (*go_load.UpdateDownloadTaskResponse, error) {
-	panic("unimplemented")
+	output, err := a.downloadTaskLogic.UpdateDownloadTask(ctx, logic.UpdateDownloadTaskParams{
+		Token:          request.GetToken(),
+		DownloadTaskID: request.GetDownloadTaskId(),
+		URL:            request.GetUrl(),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &go_load.UpdateDownloadTaskResponse{
+		DownloadTask: output.DownloadTask,
+	}, nil
 }

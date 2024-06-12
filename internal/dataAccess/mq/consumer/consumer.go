@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"goload/internal/configs"
+	"goload/internal/utils"
 
 	"os"
 	"os/signal"
@@ -15,20 +16,14 @@ import (
 type HandlerFunc func(ctx context.Context, queueName string, payload []byte) error
 
 type Consumer interface {
-	RegisterHandler(queueName string, handlerFunc HandlerFunc) error
+	RegisterHandler(queueName string, handlerFunc HandlerFunc)
 	Start(ctx context.Context) error
 }
 
-type partitionConsumerAndHandlerFunc struct {
-	queueName         string
-	partitionConsumer sarama.PartitionConsumer
-	handlerFunc       HandlerFunc
-}
-
 type consumer struct {
-	saramaConsumer                      sarama.Consumer
-	partitionConsumerAndHandlerFuncList []partitionConsumerAndHandlerFunc
-	logger                              *zap.Logger
+	saramaConsumer            sarama.Consumer
+	queueNameToHandlerFuncMap map[string]HandlerFunc
+	logger                    *zap.Logger
 }
 
 func newSaramaConfig(mqConfig configs.MQ) *sarama.Config {
@@ -53,46 +48,44 @@ func NewConsumer(
 	}, nil
 }
 
-func (c *consumer) RegisterHandler(queueName string, handlerFunc HandlerFunc) error {
+func (c *consumer) RegisterHandler(queueName string, handlerFunc HandlerFunc) {
+	c.queueNameToHandlerFuncMap[queueName] = handlerFunc
+}
+
+func (c consumer) consumer(queueName string, handlerFunc HandlerFunc, exitSignalChannel chan os.Signal) error {
+	logger := c.logger.With(zap.String("queue_name", queueName))
+
 	partitionConsumer, err := c.saramaConsumer.ConsumePartition(queueName, 0, sarama.OffsetOldest)
 	if err != nil {
 		return fmt.Errorf("failed to create sarama partition consumer: %w", err)
 	}
 
-	c.partitionConsumerAndHandlerFuncList = append(
-		c.partitionConsumerAndHandlerFuncList,
-		partitionConsumerAndHandlerFunc{
-			queueName:         queueName,
-			partitionConsumer: partitionConsumer,
-			handlerFunc:       handlerFunc,
-		})
-
-	return nil
+	for {
+		select {
+		case message := <-partitionConsumer.Messages():
+			if err := handlerFunc(context.Background(), queueName, message.Value); err != nil {
+				logger.With(zap.Error(err)).Error("failed to handle message")
+			}
+		case <-exitSignalChannel:
+			return nil
+		}
+	}
 }
 
-func (c consumer) Start(_ context.Context) error {
+func (c consumer) Start(ctx context.Context) error {
+	logger := utils.LoggerWithContext(ctx, c.logger)
+
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 
-	for i := range c.partitionConsumerAndHandlerFuncList {
-		go func(i int) {
-			queueName := c.partitionConsumerAndHandlerFuncList[i].queueName
-			partitionConsumer := c.partitionConsumerAndHandlerFuncList[i].partitionConsumer
-			handlerFunc := c.partitionConsumerAndHandlerFuncList[i].handlerFunc
-			logger := c.logger.With(zap.String("queue_name", queueName))
-
-			for {
-				select {
-				case message := <-partitionConsumer.Messages():
-					if err := handlerFunc(context.Background(), queueName, message.Value); err != nil {
-						logger.With(zap.Error(err)).Error("failed to handle message")
-					}
-
-				case <-signals:
-					break
-				}
+	for queueName, handlerFunc := range c.queueNameToHandlerFuncMap {
+		go func(queueName string, handlerFunc HandlerFunc) {
+			if err := c.consumer(queueName, handlerFunc, signals); err != nil {
+				logger.With(zap.String("queue_name", queueName)).
+					With(zap.Error(err)).
+					Error("failed to consume")
 			}
-		}(i)
+		}(queueName, handlerFunc)
 	}
 
 	<-signals
