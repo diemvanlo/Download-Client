@@ -25,12 +25,12 @@ func WithAuthCookieToAuthMetadata(authCookieName, authMetadataName string) runti
 
 func WithAuthMetadataToAuthCookie(authCookieName, authMetadataName string, expiresInDuration time.Duration) runtime.ServeMuxOption {
 	return runtime.WithForwardResponseOption(func(ctx context.Context, w http.ResponseWriter, msg proto.Message) error {
-		metadata, ok := metadata.FromOutgoingContext(ctx)
+		metadata, ok := runtime.ServerMetadataFromContext(ctx)
 		if !ok {
 			return nil
 		}
 
-		authMetadataValues := metadata.Get(authMetadataName)
+		authMetadataValues := metadata.HeaderMD.Get(authMetadataName)
 		if len(authMetadataValues) == 0 {
 			return nil
 		}
@@ -44,5 +44,15 @@ func WithAuthMetadataToAuthCookie(authCookieName, authMetadataName string, expir
 		})
 
 		return nil
+	})
+}
+
+func WithRemoveGoAuthMetadata(authMetadataName string) runtime.ServeMuxOption {
+	return runtime.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
+		if s == authMetadataName {
+			return "", false
+		}
+
+		return runtime.DefaultHeaderMatcher(s)
 	})
 }

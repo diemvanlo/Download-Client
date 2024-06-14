@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/doug-martin/goqu/v9"
 	"go.uber.org/zap"
@@ -82,13 +81,13 @@ func (a account) isAccountAccountNameTaken(ctx context.Context, accountName stri
 	accountNameTaken, err := a.takenAccountNameCache.Has(ctx, accountName)
 	if err != nil {
 		logger.With(zap.Error(err)).Warn("failed to get account name from taken set in cache, will fall back to database")
-	} else {
-		return accountNameTaken, nil
+	} else if accountNameTaken {
+		return true, nil
 	}
 
 	_, err = a.accountDataAccessor.GetAccountByAccountName(ctx, accountName)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, database.ErrAccountNotFound) {
 			return false, nil
 		}
 
@@ -106,7 +105,7 @@ func (a account) isAccountAccountNameTaken(ctx context.Context, accountName stri
 func (a account) CreateAccount(ctx context.Context, params CreateAccountParams) (CreateAccountOutput, error) {
 	accountNameTaken, err := a.isAccountAccountNameTaken(ctx, params.AccountName)
 	if err != nil {
-		return CreateAccountOutput{}, status.Errorf(codes.Internal, "failed to check if account name is taken")
+		return CreateAccountOutput{}, status.Error(codes.Internal, "failed to check if account name is taken")
 	}
 
 	if accountNameTaken {

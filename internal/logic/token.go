@@ -164,6 +164,7 @@ func (t token) GetAccountIDAndExpireTime(ctx context.Context, token string) (uin
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("Failed to parse token")
+		return 0, time.Time{}, err
 	}
 
 	if !parsedToken.Valid {

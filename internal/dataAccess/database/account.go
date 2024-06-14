@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	TabNameAccounts = goqu.T("accounts")
+	TabNameAccounts    = goqu.T("accounts")
+	ErrAccountNotFound = status.Errorf(codes.NotFound, "account not found")
 )
 
 const (
@@ -57,13 +58,13 @@ func (a accountDataAccessor) CreateAccount(ctx context.Context, account Account)
 		ExecContext(ctx)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to create account")
-		return 0, status.Errorf(codes.Internal, "failed to create account: %+v", err)
+		return 0, status.Error(codes.Internal, "failed to create account")
 	}
 
 	lastInsertedID, err := result.LastInsertId()
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get last inserted id")
-		return 0, status.Errorf(codes.Internal, "failed to get last inserted id: %+v", err)
+		return 0, status.Error(codes.Internal, "failed to get last inserted id")
 	}
 
 	return uint64(lastInsertedID), nil
@@ -78,12 +79,12 @@ func (a accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Acc
 		ScanStructContext(ctx, &account)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account by id")
-		return Account{}, status.Errorf(codes.Internal, "failed to get account by id: %+v", err)
+		return Account{}, status.Error(codes.Internal, "failed to get account by id")
 	}
 
 	if !found {
 		logger.Warn("cannot find account by id")
-		return Account{}, status.Errorf(codes.NotFound, "cannot find account by id")
+		return Account{}, ErrAccountNotFound
 	}
 
 	return account, nil
@@ -98,12 +99,12 @@ func (a accountDataAccessor) GetAccountByAccountName(ctx context.Context, accoun
 		ScanStructContext(ctx, &account)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account by name")
-		return Account{}, status.Errorf(codes.Internal, "failed to get account by name: %+v", err)
+		return Account{}, status.Error(codes.Internal, "failed to get account by name")
 	}
 
 	if !found {
 		logger.Warn("cannot find account by name")
-		return Account{}, status.Errorf(codes.NotFound, "cannot find account by name")
+		return Account{}, ErrAccountNotFound
 	}
 
 	return account, nil

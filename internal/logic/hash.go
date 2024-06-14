@@ -25,7 +25,7 @@ func NewHash(config configs.Auth) Hash {
 func (h hash) Hash(ctx context.Context, data string) (string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(data), h.accountConfig.Hash.HashCost)
 	if err != nil {
-		return "", status.Errorf(codes.Internal, "failed to hash data: %+v", err)
+		return "", status.Error(codes.Internal, "failed to hash data")
 	}
 
 	return string(hashed), nil
@@ -37,7 +37,7 @@ func (h hash) IsHashEqual(ctx context.Context, data string, hashed string) (bool
 			return false, nil
 		}
 
-		return false, status.Errorf(codes.Internal, "failed to if data equal hash: %+v", err)
+		return false, status.Error(codes.Internal, "failed to if data equal hash")
 	}
 
 	return true, nil

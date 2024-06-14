@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AuthTokenMetadata = "GOAUTH_TOKEN"
+	AuthTokenMetadataName = "GOAUTH_TOKEN"
 )
 
 type Handler struct {
@@ -34,7 +34,7 @@ func (a Handler) getAuthTokenMetadata(ctx context.Context) string {
 		return ""
 	}
 
-	metadataValues := metadata.Get(AuthTokenMetadata)
+	metadataValues := metadata.Get(AuthTokenMetadataName)
 	if len(metadataValues) == 0 {
 		return ""
 	}
@@ -89,7 +89,7 @@ func (a Handler) CreateSession(
 		return nil, err
 	}
 
-	err = grpc.SetHeader(ctx, metadata.Pairs(AuthTokenMetadata, output.Token))
+	err = grpc.SetHeader(ctx, metadata.Pairs(AuthTokenMetadataName, output.Token))
 	if err != nil {
 		return nil, err
 	}
