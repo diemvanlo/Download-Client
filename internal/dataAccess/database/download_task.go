@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/doug-martin/goqu/v9"
 	"go.uber.org/zap"
-	"goload/internal/generated/grpc/go_load"
+	"goload/internal/generated/go_load/v1"
 	"goload/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

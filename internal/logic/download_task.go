@@ -5,7 +5,7 @@ import (
 	"github.com/samber/lo"
 	"goload/internal/dataAccess/database"
 	"goload/internal/dataAccess/mq/producer"
-	"goload/internal/generated/grpc/go_load"
+	"goload/internal/generated/go_load/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 

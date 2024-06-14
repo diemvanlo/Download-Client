@@ -5,7 +5,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
 	"goload/internal/configs"
-	"goload/internal/generated/grpc/go_load"
+	"goload/internal/generated/go_load/v1"
 	handlerGRPC "goload/internal/handler/grpc"
 	"goload/internal/handler/http/servermuxoptions"
 	"goload/internal/utils"

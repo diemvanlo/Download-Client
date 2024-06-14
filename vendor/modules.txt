@@ -1,3 +1,7 @@
+# buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.31.0-20230802163732-1c33ebd9ecfa.1
+## explicit
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate/priv
 # github.com/IBM/sarama v1.43.2
 ## explicit; go 1.19
 github.com/IBM/sarama

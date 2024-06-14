@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 	"goload/internal/dataAccess/cache"
 	"goload/internal/dataAccess/database"
-	"goload/internal/generated/grpc/go_load"
+	"goload/internal/generated/go_load/v1"
 	"goload/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

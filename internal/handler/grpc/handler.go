@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"goload/internal/generated/grpc/go_load"
+	"goload/internal/generated/go_load/v1"
 	"goload/internal/logic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
