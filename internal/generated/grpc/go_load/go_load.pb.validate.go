@@ -788,8 +788,6 @@ func (m *CreateDownloadTaskRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Token
-
 	// no validation rules for DownloadType
 
 	if utf8.RuneCountInString(m.GetUrl()) > 2000 {
@@ -1447,6 +1445,8 @@ func (m *UpdateDownloadTaskResponse) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Token
 
 	if len(errors) > 0 {
 		return UpdateDownloadTaskResponseMultiError(errors)

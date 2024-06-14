@@ -67,9 +67,8 @@ message CreateSessionResponse {
 }
 
 message CreateDownloadTaskRequest {
-  string token = 1;
-  DownloadType download_type = 2;
-  string url = 3 [(validate.rules).string = {
+  DownloadType download_type = 1;
+  string url = 2 [(validate.rules).string = {
     max_len: 2000
   }];
 }
@@ -99,6 +98,7 @@ message UpdateDownloadTaskRequest {
 }
 message UpdateDownloadTaskResponse {
   DownloadTask download_task = 1;
+  string token = 2;
 }
 
 message DeleteDownloadTaskRequest {

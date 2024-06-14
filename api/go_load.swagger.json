@@ -286,9 +286,6 @@
     "go_loadCreateDownloadTaskRequest": {
       "type": "object",
       "properties": {
-        "token": {
-          "type": "string"
-        },
         "downloadType": {
           "$ref": "#/definitions/go_loadDownloadType"
         },
@@ -455,6 +452,9 @@
       "properties": {
         "downloadTask": {
           "$ref": "#/definitions/go_loadDownloadTask"
+        },
+        "token": {
+          "type": "string"
         }
       }
     },
