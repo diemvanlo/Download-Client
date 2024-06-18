@@ -9,7 +9,7 @@ import (
 	"github.com/google/wire"
 	"goload/internal/app"
 	"goload/internal/configs"
-	dataaccess "goload/internal/dataAccess"
+	dataaccess "goload/internal/dataaccess"
 	"goload/internal/handler"
 	"goload/internal/logic"
 	"goload/internal/utils"

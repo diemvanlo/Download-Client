@@ -2,14 +2,15 @@ package grpc
 
 import (
 	"context"
-	"goload/internal/generated/go_load/v1"
+	go_load "goload/internal/generated/downloadClient/v1"
 	"goload/internal/logic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
 const (
-	AuthTokenMetadataName = "GOAUTH_TOKEN"
+	//nolint:gosec // This is just to specify the metadata name
+	AuthTokenMetadataName = "GOLOAD_AUTH"
 )
 
 type Handler struct {
@@ -96,7 +97,6 @@ func (a Handler) CreateSession(
 
 	return &go_load.CreateSessionResponse{
 		Account: output.Account,
-		Token:   output.Token,
 	}, nil
 }
 
@@ -130,14 +130,13 @@ func (a Handler) GetDownloadTaskList(
 		Offset: request.GetOffset(),
 		Limit:  request.GetLimit(),
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
 	return &go_load.GetDownloadTaskListResponse{
-		TotalDownloadTaskCount: output.TotalDownloadTaskCount,
 		DownloadTaskList:       output.DownloadTaskList,
+		TotalDownloadTaskCount: output.TotalDownloadTaskCount,
 	}, nil
 }
 
@@ -150,7 +149,6 @@ func (a Handler) UpdateDownloadTask(
 		DownloadTaskID: request.GetDownloadTaskId(),
 		URL:            request.GetUrl(),
 	})
-
 	if err != nil {
 		return nil, err
 	}

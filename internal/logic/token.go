@@ -11,8 +11,8 @@ import (
 	"github.com/golang-jwt/jwt"
 	"go.uber.org/zap"
 	"goload/internal/configs"
-	"goload/internal/dataAccess/cache"
-	"goload/internal/dataAccess/database"
+	"goload/internal/dataaccess/cache"
+	"goload/internal/dataaccess/database"
 	"goload/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -178,7 +178,7 @@ func (t token) GetAccountIDAndExpireTime(ctx context.Context, token string) (uin
 		return 0, time.Time{}, errCannotGetTokenClaim
 	}
 
-	accountId, ok := claims["sub"].(uint64)
+	accountId, ok := claims["sub"].(float64)
 	if !ok {
 		logger.Error("cannot get token's sub claim")
 		return 0, time.Time{}, errCannotGetTokenSubClaim

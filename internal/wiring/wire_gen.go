@@ -10,11 +10,12 @@ import (
 	"github.com/google/wire"
 	"goload/internal/app"
 	"goload/internal/configs"
-	"goload/internal/dataAccess"
-	"goload/internal/dataAccess/cache"
-	"goload/internal/dataAccess/database"
-	"goload/internal/dataAccess/mq/consumer"
-	"goload/internal/dataAccess/mq/producer"
+	"goload/internal/dataaccess"
+	"goload/internal/dataaccess/cache"
+	"goload/internal/dataaccess/database"
+	"goload/internal/dataaccess/file"
+	"goload/internal/dataaccess/mq/consumer"
+	"goload/internal/dataaccess/mq/producer"
 	"goload/internal/handler"
 	"goload/internal/handler/consumers"
 	"goload/internal/handler/grpc"
@@ -67,7 +68,9 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (*app.Server, f
 		return nil, nil, err
 	}
 	downloadTaskCreatedProducer := producer.NewDownloadTaskCreatedProducer(producerClient, logger)
-	downloadTask := logic.NewDownloadTask(token, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, logger)
+	downloadConfig := config.Download
+	fileClient := file.NewLocalFileClient(logger, downloadConfig)
+	downloadTask := logic.NewDownloadTask(token, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, fileClient, logger)
 	goLoadServiceServer := grpc.NewHandler(account, downloadTask)
 	configsGRPC := config.GRPC
 	server := grpc.NewServer(goLoadServiceServer, configsGRPC, logger)

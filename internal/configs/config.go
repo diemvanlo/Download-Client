@@ -10,13 +10,14 @@ import (
 type ConfigFilePath string
 
 type Config struct {
-	GRPC     GRPC     `yaml:"grpc"`
-	HTTP     HTTP     `yaml:"http"`
-	Log      Log      `yaml:"log"`
-	Auth     Auth     `yaml:"auth"`
-	Database Database `yaml:"database"`
-	Cache    Cache    `yaml:"cache"`
-	MQ       MQ       `yaml:"mq"`
+	GRPC     GRPC           `yaml:"grpc"`
+	HTTP     HTTP           `yaml:"http"`
+	Log      Log            `yaml:"log"`
+	Auth     Auth           `yaml:"auth"`
+	Database Database       `yaml:"database"`
+	Cache    Cache          `yaml:"cache"`
+	MQ       MQ             `yaml:"mq"`
+	Download DownloadConfig `yaml:"download"`
 }
 
 func NewConfig(filePath ConfigFilePath) (Config, error) {

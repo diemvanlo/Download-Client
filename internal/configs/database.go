@@ -7,10 +7,10 @@ const (
 )
 
 type Database struct {
-	Type     DatabaseType
-	Host     string
-	Port     int
-	Username string
-	Password string
-	Database string
+	Type     DatabaseType `yaml:"type"`
+	Host     string       `yaml:"host"`
+	Port     int          `yaml:"port"`
+	Username string       `yaml:"username"`
+	Password string       `yaml:"password"`
+	Database string       `yaml:"database"`
 }

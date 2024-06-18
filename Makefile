@@ -1,6 +1,6 @@
 VERSION := $(shell cat VERSION)
 COMMIT_HASH := $(shell git rev-parse HEAD)
-PROJECT_NAME := goload
+PROJECT_NAME := downloadClient
 
 all: generate build-all
 

@@ -20,6 +20,6 @@ func (t Token) GetGenerateTokenBeforeExpiryDuration() (time.Duration, error) {
 }
 
 type Auth struct {
-	Hash  Hash  `yaml:"hash"`
-	Token Token `yaml:"token"`
+	Hash  Hash
+	Token Token
 }

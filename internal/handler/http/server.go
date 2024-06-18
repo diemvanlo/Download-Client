@@ -2,20 +2,22 @@ package http
 
 import (
 	"context"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"go.uber.org/zap"
 	"goload/internal/configs"
-	"goload/internal/generated/go_load/v1"
+	go_load "goload/internal/generated/downloadClient/v1"
 	handlerGRPC "goload/internal/handler/grpc"
-	"goload/internal/handler/http/servermuxoptions"
+	"goload/internal/handler/http/servemuxoptions"
 	"goload/internal/utils"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"time"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
+	//nolint:gosec // This is just to specify the cookie name
 	AuthTokenCookieName = "GOLOAD_AUTH"
 )
 
@@ -44,28 +46,25 @@ func NewServer(
 	}
 }
 
-func (s server) GetGRPCGatewayHandler(ctx context.Context) (http.Handler, error) {
+func (s server) getGRPCGatewayHandler(ctx context.Context) (http.Handler, error) {
 	tokenExpiresInDuration, err := s.authConfig.Token.GetExpiresInDuration()
 	if err != nil {
 		return nil, err
 	}
 
 	grpcMux := runtime.NewServeMux(
-		servermuxoptions.WithAuthCookieToAuthMetadata(AuthTokenCookieName, handlerGRPC.AuthTokenMetadataName),
-		servermuxoptions.WithAuthMetadataToAuthCookie(handlerGRPC.AuthTokenMetadataName, AuthTokenCookieName, tokenExpiresInDuration),
-		servermuxoptions.WithRemoveGoAuthMetadata(handlerGRPC.AuthTokenMetadataName),
+		servemuxoptions.WithAuthCookieToAuthMetadata(AuthTokenCookieName, handlerGRPC.AuthTokenMetadataName),
+		servemuxoptions.WithAuthMetadataToAuthCookie(
+			handlerGRPC.AuthTokenMetadataName, AuthTokenCookieName, tokenExpiresInDuration),
+		servemuxoptions.WithRemoveGoAuthMetadata(handlerGRPC.AuthTokenMetadataName),
 	)
-
-	if err := go_load.RegisterGoLoadServiceHandlerFromEndpoint(
+	err = go_load.RegisterGoLoadServiceHandlerFromEndpoint(
 		ctx,
 		grpcMux,
 		s.grpcConfig.Address,
 		[]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		}); err != nil {
-		return nil, err
-	}
-
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +75,7 @@ func (s server) GetGRPCGatewayHandler(ctx context.Context) (http.Handler, error)
 func (s server) Start(ctx context.Context) error {
 	logger := utils.LoggerWithContext(ctx, s.logger)
 
-	grpcGatewayHandler, err := s.GetGRPCGatewayHandler(ctx)
+	grpcGatewayHandler, err := s.getGRPCGatewayHandler(ctx)
 	if err != nil {
 		return err
 	}

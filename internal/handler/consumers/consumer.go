@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"go.uber.org/zap"
-	"goload/internal/dataAccess/mq/consumer"
-	"goload/internal/dataAccess/mq/producer"
+	"goload/internal/dataaccess/mq/consumer"
+	"goload/internal/dataaccess/mq/producer"
 )
 
 type Root interface {

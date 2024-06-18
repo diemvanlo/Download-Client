@@ -5,9 +5,9 @@ import (
 	"errors"
 	"github.com/doug-martin/goqu/v9"
 	"go.uber.org/zap"
-	"goload/internal/dataAccess/cache"
-	"goload/internal/dataAccess/database"
-	"goload/internal/generated/go_load/v1"
+	"goload/internal/dataaccess/cache"
+	"goload/internal/dataaccess/database"
+	go_load "goload/internal/generated/downloadClient/v1"
 	"goload/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -170,6 +170,9 @@ func (a account) CreateSession(ctx context.Context, params CreateSessionParams) 
 	if err != nil {
 		return CreateSessionOutput{}, err
 	}
+
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.String("token", token))
+	logger.Info("Token data")
 
 	return CreateSessionOutput{
 		Account: a.databaseAccountToProtoAccount(existingAccount),

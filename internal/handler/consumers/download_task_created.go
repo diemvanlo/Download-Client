@@ -2,7 +2,7 @@ package consumers
 
 import (
 	"context"
-	"goload/internal/dataAccess/mq/producer"
+	"goload/internal/dataaccess/mq/producer"
 	"goload/internal/utils"
 
 	"go.uber.org/zap"

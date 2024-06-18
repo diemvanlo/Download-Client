@@ -5,7 +5,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
 	"go.uber.org/zap"
 	"goload/internal/configs"
-	"goload/internal/generated/go_load/v1"
+	go_load "goload/internal/generated/downloadClient/v1"
 	"goload/internal/utils"
 	"google.golang.org/grpc"
 	"net"
@@ -33,7 +33,7 @@ func NewServer(
 	}
 }
 
-func (s *server) Start(ctx context.Context) error {
+func (s server) Start(ctx context.Context) error {
 	logger := utils.LoggerWithContext(ctx, s.logger)
 
 	listener, err := net.Listen("tcp", s.grpcConfig.Address)
